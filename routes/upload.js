@@ -17,13 +17,24 @@ const upload = multer({
 router.post('/upload', upload.array('files', 10), async (req, res) => {
     try {
         const groupId = uuidv4();
-        const files = req.files.map(file => ({
-            filename: file.originalname,
-            content: file.buffer,
-            mimetype: file.mimetype,
-            size: file.size,
-            groupId
-        }));
+        const files = req.files.map(file => {
+            // Generate thumbnails for each file
+            let thumbnailData = null;
+
+            // Basic thumbnail data is just the file data itself
+            // In a production app, you'd want to generate actual thumbnails
+            // to reduce bandwidth usage
+            thumbnailData = file.buffer;
+
+            return {
+                filename: file.originalname,
+                content: file.buffer,
+                mimetype: file.mimetype,
+                size: file.size,
+                thumbnail: thumbnailData,
+                groupId
+            };
+        });
 
         await File.insertMany(files);
 
@@ -31,8 +42,6 @@ router.post('/upload', upload.array('files', 10), async (req, res) => {
         const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'; // Update with frontend URL
         const downloadPageUrl = `${frontendBaseUrl}/download/${groupId}`;
         const qrCode = await QRCode.toDataURL(downloadPageUrl);
-
-        // console.log(`Download Page: ${downloadPageUrl}`);
 
         res.status(200).json({
             success: true,
@@ -58,11 +67,51 @@ router.get('/files/:groupId', async (req, res) => {
             files: files.map(file => ({
                 filename: file.filename,
                 size: file.size,
-                type: file.mimetype
+                type: file.mimetype,
+                fileId: file._id // Add file ID for individual preview requests
             }))
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Add individual file preview endpoint
+router.get('/preview/:fileId', async (req, res) => {
+    try {
+        const file = await File.findById(req.params.fileId);
+        if (!file) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+
+        // For binary file types, send the content directly
+        res.set('Content-Type', file.mimetype);
+        res.set('Content-Disposition', `inline; filename="${file.filename}"`);
+        res.send(file.content);
+    } catch (error) {
+        console.error('Preview error:', error);
+        res.status(500).json({ message: 'Preview failed' });
+    }
+});
+
+// Add thumbnail preview endpoint
+router.get('/thumbnail/:fileId', async (req, res) => {
+    try {
+        const file = await File.findById(req.params.fileId);
+        if (!file) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+
+        // Send content-type header based on file type
+        res.set('Content-Type', file.mimetype);
+        res.set('Content-Disposition', `inline; filename="thumb-${file.filename}"`);
+
+        // For this implementation, we're using the same content for thumbnails
+        // In a production app, you'd generate actual thumbnails
+        res.send(file.content);
+    } catch (error) {
+        console.error('Thumbnail error:', error);
+        res.status(500).json({ message: 'Thumbnail failed' });
     }
 });
 

@@ -17,9 +17,14 @@ const FileSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    thumbnail: {
+        type: Buffer,
+        required: true
+    },
     groupId: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     createdAt: {
         type: Date,
