@@ -14,6 +14,10 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 }
 });
 
+router.get('/', (req, res) => {
+    return res.json({ success: true, message: 'Working' });
+});
+
 router.post('/upload', upload.array('files', 10), async (req, res) => {
     try {
         const groupId = uuidv4();
