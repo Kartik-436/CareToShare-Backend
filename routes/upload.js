@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
     return res.json({ success: true, message: 'Working' });
 });
 
-router.post('/upload', upload.array('files', 10), async (req, res) => {
+router.post('/upload', upload.array('files', 20), async (req, res) => {
     try {
         const groupId = uuidv4();
         const files = req.files.map(file => {
