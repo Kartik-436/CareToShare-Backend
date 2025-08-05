@@ -11,14 +11,14 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
     storage,
-    limits: { fileSize: 50 * 1024 * 1024 }
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 router.get('/', (req, res) => {
     return res.json({ success: true, message: 'Working' });
 });
 
-router.post('/upload', upload.array('files', 20), async (req, res) => {
+router.post('/upload', upload.array('files', 50), async (req, res) => {
     try {
         const groupId = uuidv4();
         const files = req.files.map(file => {
